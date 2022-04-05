@@ -54,13 +54,10 @@ def get_replies(id, bearer_token, results: int = 10):
         return
     return response.json()
 
-def sentiment(text):
-    #TODO
-    return 0.5
-
 def analyze_topic(
     query, 
     bearer_token, 
+    minimum_likes = 5,
     num_parents: int = 10, 
     num_replies: int = 10,
     parent_weight = 1,
@@ -70,28 +67,35 @@ def analyze_topic(
     if tweets:
         sentiments = []
         for tweet in tweets['data']:
-            sentiments.append(
-                    {
-                        'sentiment': sentiment(tweet['text']),
-                        'weight': parent_weight*(1 + tweet['public_metrics']['retweet_count'] + tweet['public_metrics']['quote_count'] + tweet['public_metrics']['like_count'])
-                    }
-                )
+            if tweet['public_metrics']['like_count'] >= minimum_likes:
+                sentiments.append(
+                        {
+                            'sentiment': sentiment(tweet['text']),
+                            'weight': parent_weight*(1 + tweet['public_metrics']['retweet_count'] + tweet['public_metrics']['quote_count'] + tweet['public_metrics']['like_count'])
+                        }
+                    )
+
             if num_replies:
                 replies = get_replies(tweet['id'], bearer_token, num_replies)
                 if replies:
                     for reply in replies['data']:
                         metrics = reply['public_metrics']
-                        sentiments.append(
-                            {
-                                'sentiment': sentiment(reply['text']),
-                                'weight': reply_weight*(1 + metrics['retweet_count'] + metrics['quote_count'] + metrics['like_count'])
-                            }
-                        )
+                        if metrics['like_count'] >= minimum_likes:
+                            sentiments.append(
+                                {
+                                    'sentiment': sentiment(reply['text']),
+                                    'weight': reply_weight*(1 + metrics['retweet_count'] + metrics['quote_count'] + metrics['like_count'])
+                                }
+                            )
         weighted_average = numpy.average(
             [item['sentiment'] for item in sentiments],
             weights = [item['weight'] for item in sentiments]
         )
         return weighted_average
+
+def sentiment(text):
+    #TODO
+    return 0.5
 
 # Only parent tweets for now - replies works, I'm just worried abt duplicates
 print(analyze_topic('"Mac Pro"', bearer_token, num_replies=0))
