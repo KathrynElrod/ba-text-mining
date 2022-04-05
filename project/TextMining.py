@@ -98,4 +98,4 @@ def sentiment(text):
     return 0.5
 
 # Only parent tweets for now - replies works, I'm just worried abt duplicates
-print(analyze_topic('"Mac Pro"', bearer_token, num_replies=0))
+print(analyze_topic('"Mac Studio"', bearer_token, num_replies=0))
